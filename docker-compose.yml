@@ -1,0 +1,39 @@
+services:
+  erfdoc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: erfdoc-app
+    ports:
+      - "8501:8501"
+    volumes:
+      # Mount data directory for persistence
+      - ./data:/app/data
+      # Mount .env file for configuration
+      - ./.env:/app/.env:ro
+    environment:
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-local}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - LOCAL_MODEL_NAME=${LOCAL_MODEL_NAME:-qwen2.5:latest}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANONYMIZED_TELEMETRY=False
+    restart: unless-stopped
+    networks:
+      - erfdoc-network
+    # Use host network mode if Ollama is running on host machine
+    # Uncomment the line below if you need to access host services
+    # network_mode: "host"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  erfdoc-network:
+    driver: bridge
+
+volumes:
+  erfdoc-data:
+    driver: local
